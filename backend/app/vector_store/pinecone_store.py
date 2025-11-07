@@ -1,4 +1,4 @@
-import pinecone
+from pinecone import Pinecone, ServerlessSpec
 from typing import List, Dict, Any, Optional, Union
 import time
 from sentence_transformers import SentenceTransformer
@@ -22,14 +22,18 @@ class PineconeStore(VectorStoreBase):
         self.environment = environment
         self.index_name = index_name
         self.namespace = namespace
+        self.pc = None
         self.index = None
         self.embedding_model = (
             SentenceTransformer(embedding_model) if embedding_model else None
         )
+        # Store region info for index creation
+        self.cloud = kwargs.get("cloud", "gcp")
+        self.region = kwargs.get("region", "us-central1")
 
     def initialize(self) -> None:
-        # Initialize Pinecone client
-        pinecone.init(api_key=self.api_key, environment=self.environment)
+        # Initialize new Pinecone client
+        self.pc = Pinecone(api_key=self.api_key)
         
         # Map our distance metrics to Pinecone's metrics
         metric_mapping = {
@@ -39,19 +43,27 @@ class PineconeStore(VectorStoreBase):
         }
         
         # Create index if it doesn't exist
-        if self.index_name not in pinecone.list_indexes():
-            pinecone.create_index(
+        if self.index_name not in self.pc.list_indexes().names():
+            print(f"Creating new Pinecone index {self.index_name}")
+            self.pc.create_index(
                 name=self.index_name,
                 dimension=self.embedding_dimension,
-                metric=metric_mapping[self.distance_metric]
+                metric=metric_mapping[self.distance_metric],
+                spec=ServerlessSpec(
+                    cloud=self.cloud,
+                    region=self.region
+                )
             )
-        
-        self.index = pinecone.Index(self.index_name)
+            print("Index created successfully")
+        else:
+            print(f"Using existing index: {self.index_name}")
+
+        self.index = self.pc.Index(self.index_name)
         
         # Update stats
         stats = self.index.describe_index_stats()
         self.stats["vector_count"] = stats.total_vector_count
-        self.stats["index_size"] = stats.dimension
+        self.stats["index_size"] = self.embedding_dimension
 
     def add_vectors(
         self,
@@ -72,17 +84,19 @@ class PineconeStore(VectorStoreBase):
             meta = metadata[i].copy()
             meta["raw_content"] = raw_content[i]
             
-            vectors_data.append((ids[i], vectors[i], meta))
+            vectors_data.append({
+                "id": ids[i],
+                "values": vectors[i],
+                "metadata": meta
+            })
         
+        # Upsert vectors in batches of 100 (Pinecone's recommended batch size)
+        batch_size = 100
         try:
-            # Upsert vectors in batches of 100 (Pinecone's recommended batch size)
-            batch_size = 100
             for i in range(0, len(vectors_data), batch_size):
                 batch = vectors_data[i:i + batch_size]
-                self.index.upsert(
-                    vectors=batch,
-                    namespace=self.namespace
-                )
+                self.index.upsert(vectors=batch, namespace=self.namespace)
+                print(f"Added batch of {len(batch)} vectors")
                 
         except Exception as e:
             # Implement retry logic
@@ -90,14 +104,14 @@ class PineconeStore(VectorStoreBase):
                 try:
                     for i in range(0, len(vectors_data), batch_size):
                         batch = vectors_data[i:i + batch_size]
-                        self.index.upsert(
-                            vectors=batch,
-                            namespace=self.namespace
-                        )
+                        self.index.upsert(vectors=batch, namespace=self.namespace)
+                    print(f"Successfully added vectors on retry {retry + 1}")
                     break
                 except Exception:
                     if retry == 2:
+                        print(f"Failed to add vectors after 3 retries: {str(e)}")
                         raise e
+                    print(f"Retry {retry + 1} failed, attempting again...")
         
         self._update_stats("write", start_time)
         stats = self.index.describe_index_stats()
@@ -112,7 +126,9 @@ class PineconeStore(VectorStoreBase):
         if not self.embedding_model:
             raise ValueError("Embedding model not initialized")
 
+        print("Converting texts to vectors...")
         vectors = self.embedding_model.encode(texts).tolist()
+        print(f"Successfully converted {len(texts)} texts to vectors")
         self.add_vectors(vectors, ids, metadata, texts)
 
     def search(
@@ -131,6 +147,7 @@ class PineconeStore(VectorStoreBase):
         if isinstance(query, str):
             if not self.embedding_model:
                 raise ValueError("Embedding model not initialized")
+            print("Converting query to vector...")
             query_vector = self.embedding_model.encode(query).tolist()
         else:
             query_vector = query
@@ -143,7 +160,8 @@ class PineconeStore(VectorStoreBase):
             filter_dict["raw_content"] = {"$contains": keyword_filter}
 
         # Perform the search
-        results = self.index.query(
+        print("Executing search...")
+        response = self.index.query(
             vector=query_vector,
             filter=filter_dict if filter_dict else None,
             top_k=top_k,
@@ -153,17 +171,19 @@ class PineconeStore(VectorStoreBase):
 
         # Format results
         search_results = []
-        for match in results.matches:
-            raw_content = match.metadata.pop("raw_content", "")
+        for match in response.matches:
+            metadata = dict(match.metadata or {})
+            raw_content = metadata.pop("raw_content", "")
             result = VectorSearchResult(
                 id=match.id,
                 similarity_score=float(match.score),
-                metadata=match.metadata,
+                metadata=metadata,
                 raw_content=raw_content
             )
             search_results.append(result)
 
         self._update_stats("search", start_time)
+        print(f"Found {len(search_results)} results")
         return search_results
 
     def delete(self, ids: List[str]) -> None:
@@ -186,5 +206,5 @@ class PineconeStore(VectorStoreBase):
         if self.index:
             index_stats = self.index.describe_index_stats()
             stats["vector_count"] = index_stats.total_vector_count
-            stats["index_size"] = index_stats.dimension
+            stats["index_size"] = self.embedding_dimension
         return stats

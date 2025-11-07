@@ -11,3 +11,4 @@ pip install chromadb pinecone sentence-transformers
 ```bash
 cd /home/azureuser/xdoc/backend && python -m app.vector_store.example
 ```
+

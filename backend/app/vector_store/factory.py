@@ -45,5 +45,13 @@ DEFAULT_CONFIGS = {
         "collection_name": "default",
         "persist_directory": "./vector_store",
         "embedding_model": "all-MiniLM-L6-v2"
+    },
+    "pinecone": {
+        "embedding_dimension": 384,
+        "api_key": "<your-api-key>",  # Set via env var PINECONE_API_KEY
+        "environment": "gcp-starter",  # Or your Pinecone environment
+        "index_name": "xdoc-test",
+        "namespace": "default",
+        "embedding_model": "all-MiniLM-L6-v2"
     }
 }
