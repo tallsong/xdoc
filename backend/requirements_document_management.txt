@@ -1,0 +1,33 @@
+# Document Management System - Additional Dependencies
+# Add these to the main requirements.txt
+
+# Document Generation
+python-docx>=0.8.11              # Word document generation
+reportlab>=4.0.0                 # PDF generation from scratch
+weasyprint>=58.0                 # HTML to PDF conversion
+PyPDF2>=3.0.0                    # PDF manipulation (encryption, watermarking)
+pypdf>=4.0.0                     # PDF reading/writing (alternative to PyPDF2)
+
+# Storage
+boto3>=1.26.0                    # AWS S3 client
+botocore>=1.29.0                 # AWS SDK core
+
+# Security & Cryptography
+cryptography>=41.0.0             # Encryption utilities
+python-multipart>=0.0.6          # Already in project
+
+# Template rendering
+jinja2>=3.1.4                    # Already in project (Jinja2 templates)
+
+# Utilities
+python-dateutil>=2.8.2           # Date utilities
+pytz>=2023.3                     # Timezone support
+
+# Optional: For enhanced functionality
+# fitz>=0.0.1.dev2               # PDF text extraction (PyMuPDF)
+# pdf2image>=1.16.0              # PDF to image conversion
+# pillow>=10.0.0                 # Image processing
+
+# Testing
+pytest>=7.4.3                    # Already in project
+pytest-asyncio>=0.21.0           # Async test support

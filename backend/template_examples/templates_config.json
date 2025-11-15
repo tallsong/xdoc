@@ -1,0 +1,142 @@
+{
+  "templates": [
+    {
+      "name": "weekly_report",
+      "category": "reports",
+      "description": "Weekly status report template",
+      "file_type": "html",
+      "placeholders": [
+        {
+          "name": "report_date",
+          "type": "date",
+          "required": true,
+          "description": "Report date"
+        },
+        {
+          "name": "department",
+          "type": "text",
+          "required": true,
+          "description": "Department name"
+        },
+        {
+          "name": "prepared_by",
+          "type": "text",
+          "required": true,
+          "description": "Person who prepared the report"
+        },
+        {
+          "name": "executive_summary",
+          "type": "text",
+          "required": true,
+          "description": "Executive summary"
+        },
+        {
+          "name": "metrics",
+          "type": "table",
+          "required": false,
+          "description": "Key metrics table"
+        },
+        {
+          "name": "detailed_analysis",
+          "type": "text",
+          "required": true,
+          "description": "Detailed analysis"
+        },
+        {
+          "name": "recommendations",
+          "type": "text",
+          "required": true,
+          "description": "Recommendations"
+        },
+        {
+          "name": "attachment_1",
+          "type": "text",
+          "required": false,
+          "description": "Attachment 1 reference"
+        },
+        {
+          "name": "attachment_2",
+          "type": "text",
+          "required": false,
+          "description": "Attachment 2 reference"
+        }
+      ]
+    },
+    {
+      "name": "contract_agreement",
+      "category": "contracts",
+      "description": "Contract agreement template",
+      "file_type": "docx",
+      "placeholders": [
+        {
+          "name": "contract_date",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "party_a_name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "party_b_name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "contract_terms",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "duration_days",
+          "type": "number",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "invoice",
+      "category": "finance",
+      "description": "Invoice template",
+      "file_type": "html",
+      "placeholders": [
+        {
+          "name": "invoice_number",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "invoice_date",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "customer_name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "items",
+          "type": "table",
+          "required": true
+        },
+        {
+          "name": "total_amount",
+          "type": "number",
+          "required": true
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "examples": [
+    {
+      "template_name": "weekly_report",
+      "data": {
+        "report_date": "2024-05-20",
+        "department": "Engineering",
+        "prepared_by": "John Doe",
+        "executive_summary": "This week we completed the Q2 backend optimization project, improving API response times by 40%. All deadlines were met and the team is ready for the frontend integration phase.",
+        "metrics": [
+          {
+            "name": "API Response Time",
+            "value": "120ms",
+            "target": "150ms"
+          },
+          {
+            "name": "System Uptime",
+            "value": "99.98%",
+            "target": "99.9%"
+          },
+          {
+            "name": "Bug Fix Rate",
+            "value": "95%",
+            "target": "90%"
+          }
+        ],
+        "detailed_analysis": "The optimization involved refactoring database queries and implementing caching strategies. Performance improvements were measured across all endpoints.",
+        "recommendations": "Continue monitoring API performance and consider implementing GraphQL for complex queries. Schedule code review sessions for knowledge sharing.",
+        "attachment_1": "Performance_Report_May_2024.pdf",
+        "attachment_2": "Team_Productivity_Metrics.xlsx"
+      }
+    },
+    {
+      "template_name": "contract_agreement",
+      "data": {
+        "contract_date": "2024-05-20",
+        "party_a_name": "Tech Corp Inc.",
+        "party_b_name": "Digital Solutions LLC",
+        "contract_terms": "This agreement is for software development services including design, implementation, and testing of the XDoc platform.",
+        "amount": 250000,
+        "duration_days": 180
+      }
+    },
+    {
+      "template_name": "invoice",
+      "data": {
+        "invoice_number": "INV-2024-001234",
+        "invoice_date": "2024-05-20",
+        "customer_name": "Enterprise Client ABC",
+        "items": [
+          {
+            "description": "Software Development - Phase 1",
+            "quantity": 1,
+            "unit_price": 100000,
+            "total": 100000
+          },
+          {
+            "description": "Quality Assurance Testing",
+            "quantity": 200,
+            "unit_price": 500,
+            "total": 100000
+          },
+          {
+            "description": "Documentation & Training",
+            "quantity": 1,
+            "unit_price": 25000,
+            "total": 25000
+          }
+        ],
+        "total_amount": 225000,
+        "due_date": "2024-06-20"
+      }
+    }
+  ]
+}
