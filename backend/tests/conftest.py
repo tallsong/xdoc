@@ -5,6 +5,19 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, delete
 
 from app.core.config import settings
+from sqlmodel import create_engine as _create_engine
+
+# Ensure tests run against an in-memory SQLite database to avoid requiring
+# a running Postgres instance in CI/dev environments. We patch the app's
+# core.db.engine before importing init_db.
+import importlib
+import app.core.db as _core_db
+_core_db.engine = _create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+# Create tables for tests from SQLModel metadata
+from sqlmodel import SQLModel
+import app.models  # ensure models are imported and registered
+SQLModel.metadata.create_all(_core_db.engine)
+
 from app.core.db import engine, init_db
 from app.main import app
 from app.models import Item, User

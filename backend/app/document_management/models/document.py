@@ -45,7 +45,7 @@ class Document(SQLModel, table=True):
         sa_column=Column(Text),
         description="JSON of input data used to generate"
     )
-    metadata: Optional[str] = Field(
+    metadata_json: Optional[str] = Field(
         None,
         sa_column=Column(Text),
         description="JSON metadata: tags, custom fields, etc."

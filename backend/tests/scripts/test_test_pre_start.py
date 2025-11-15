@@ -11,6 +11,8 @@ def test_init_successful_connection() -> None:
     session_mock = MagicMock()
     exec_mock = MagicMock(return_value=True)
     session_mock.configure_mock(**{"exec.return_value": exec_mock})
+    # Make the mock usable as a context manager
+    session_mock.__enter__.return_value = session_mock
 
     with (
         patch("sqlmodel.Session", return_value=session_mock),
@@ -28,6 +30,4 @@ def test_init_successful_connection() -> None:
             connection_successful
         ), "The database connection should be successful and not raise an exception."
 
-        assert session_mock.exec.called_once_with(
-            select(1)
-        ), "The session should execute a select statement once."
+        session_mock.exec.assert_called()

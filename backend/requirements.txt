@@ -156,3 +156,13 @@ watchfiles==0.24.0
 websocket-client==1.9.0
 websockets==13.1
 zipp==3.23.0
+
+
+# document management dependencies
+python-docx>=0.8.11          # Word document generation
+reportlab>=4.0.0              # PDF generation
+weasyprint>=58.0              # HTML to PDF
+PyPDF2>=3.0.0                 # PDF manipulation
+jinja2>=3.1.4                 # Template rendering (already in project)
+boto3>=1.26.0                 # AWS S3 support (optional)
+pydantic-settings>=2.0        # Settings management

@@ -39,7 +39,7 @@ class Template(SQLModel, table=True):
         sa_column=Column(Text),
         description="JSON list of placeholder fields: [{name, type, required, description}]"
     )
-    metadata: Optional[str] = Field(
+    metadata_json: Optional[str] = Field(
         None,
         sa_column=Column(Text),
         description="JSON metadata for template configuration"

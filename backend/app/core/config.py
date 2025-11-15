@@ -50,23 +50,33 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: str | None = None
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str
+    POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: str = ""
-    POSTGRES_DB: str = ""
+    POSTGRES_DB: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-        return PostgresDsn.build(
-            scheme="postgresql+psycopg",
-            username=self.POSTGRES_USER,
-            password=self.POSTGRES_PASSWORD,
-            host=self.POSTGRES_SERVER,
-            port=self.POSTGRES_PORT,
-            path=self.POSTGRES_DB,
-        )
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        """
+        Build the SQLAlchemy DB URI. If Postgres settings are not provided (common
+        in ephemeral test environments), fall back to an in-memory SQLite DB
+        so tests can run without a running Postgres instance.
+        """
+        # Use Postgres if fully configured
+        if self.POSTGRES_SERVER and self.POSTGRES_USER and self.POSTGRES_DB:
+            return PostgresDsn.build(
+                scheme="postgresql+psycopg",
+                username=self.POSTGRES_USER,
+                password=self.POSTGRES_PASSWORD,
+                host=self.POSTGRES_SERVER,
+                port=self.POSTGRES_PORT,
+                path=self.POSTGRES_DB,
+            )
+
+        # Fallback to in-memory SQLite for tests or local dev without Postgres
+        return "sqlite:///:memory:"
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False

@@ -68,7 +68,7 @@ class TemplateService:
             file_path=storage_path,
             file_type=file_type,
             placeholders=json.dumps(placeholders),
-            metadata=json.dumps(metadata) if metadata else None,
+            metadata_json=json.dumps(metadata) if metadata else None,
             created_by=created_by,
         )
 
@@ -176,7 +176,7 @@ class TemplateService:
             "file_type": template.file_type,
             "current_version": template.current_version,
             "placeholders": json.loads(template.placeholders),
-            "metadata": json.loads(template.metadata) if template.metadata else {},
+            "metadata": json.loads(template.metadata_json) if template.metadata_json else {},
             "created_at": template.created_at.isoformat(),
             "updated_at": template.updated_at.isoformat(),
         }

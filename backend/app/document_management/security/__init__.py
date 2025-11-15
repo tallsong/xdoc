@@ -59,10 +59,20 @@ class FieldMasker:
         if pattern == "full":
             return "*" * len(value)
         elif pattern == "partial":
-            # Show first and last 2 chars
-            if len(value) <= 4:
+            # Partial masking: keep first 2 and last 3, insert 3 stars in middle
+            if len(value) <= 5:
                 return "*" * len(value)
-            return value[:2] + "*" * (len(value) - 4) + value[-2:]
+            return value[:2] + "***" + value[-3:]
+        elif pattern == "email":
+            # Preserve the @ and domain, mask local-part
+            if "@" not in value:
+                return FieldMasker.mask_value(value, pattern="partial")
+            local, domain = value.split("@", 1)
+            if len(local) <= 2:
+                masked_local = "*" * len(local)
+            else:
+                masked_local = local[0] + "*" * (len(local) - 2) + local[-1]
+            return masked_local + "@" + domain
         else:  # default
             # Show last 4 chars for most fields
             if len(value) <= 4:
@@ -84,6 +94,7 @@ class FieldMasker:
 
         for key, value in data.items():
             should_mask = False
+            matched_pattern_key = None
 
             # Check if field is in explicit sensitive list
             if sensitive_fields and key in sensitive_fields:
@@ -91,15 +102,22 @@ class FieldMasker:
             # Check if field name indicates sensitive data
             elif FieldMasker.is_sensitive_field_name(key):
                 should_mask = True
-            # Check if value matches sensitive pattern
+            # Check if value matches sensitive pattern and capture which
             elif isinstance(value, str):
-                for pattern in FieldMasker.SENSITIVE_PATTERNS.values():
+                for name, pattern in FieldMasker.SENSITIVE_PATTERNS.items():
                     if pattern.search(value):
                         should_mask = True
+                        matched_pattern_key = name
                         break
 
             if should_mask and isinstance(value, str):
-                masked[key] = FieldMasker.mask_value(value)
+                # Choose masking strategy
+                if matched_pattern_key == "email" or "email" in key.lower():
+                    masked[key] = FieldMasker.mask_value(value, pattern="email")
+                elif FieldMasker.is_sensitive_field_name(key):
+                    masked[key] = FieldMasker.mask_value(value, pattern="full")
+                else:
+                    masked[key] = FieldMasker.mask_value(value)
             elif isinstance(value, dict):
                 masked[key] = FieldMasker.mask_data(value, sensitive_fields)
             elif isinstance(value, list) and value and isinstance(value[0], dict):

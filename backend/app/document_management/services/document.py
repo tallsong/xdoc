@@ -138,7 +138,8 @@ class DocumentService:
             file_size=len(doc_bytes),
             mime_type=f"application/{final_type}",
             input_data=json.dumps(data),
-            metadata=json.dumps({
+            # store metadata under metadata_json to avoid ORM reserved attribute name
+            metadata_json=json.dumps({
                 "tags": tags or [],
                 "watermark": watermark,
             }),
@@ -206,7 +207,7 @@ class DocumentService:
             "file_size": doc.file_size,
             "created_at": doc.created_at.isoformat(),
             "access_level": doc.access_level.value,
-            "tags": json.loads(doc.metadata or "{}").get("tags", []) if doc.metadata else [],
+            "tags": json.loads(doc.metadata_json or "{}").get("tags", []) if doc.metadata_json else [],
         }
 
     async def download_document(
