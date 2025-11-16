@@ -130,6 +130,53 @@ Summary: {{summary}}
     print("Rendered Template Output:")
     print(rendered)
 
+    # Example 3.5: Generate PDF from rendered template
+    print("\n3.5 PDF GENERATION - Create PDF from rendered template")
+    print("-" * 60)
+    try:
+        # Wrap the rendered text in minimal HTML
+        html_content = f"""
+        <html>
+          <head>
+            <meta charset=\"utf-8\"> 
+            <style> body {{ font-family: Arial, sans-serif; white-space: pre-wrap; }} </style>
+          </head>
+          <body>
+            <div>{rendered}</div>
+          </body>
+        </html>
+        """
+
+        pdf_bytes = PDFGenerator.generate_from_html(html_content)
+
+        # Optionally add a watermark
+        pdf_bytes = PDFGenerator.add_watermark(pdf_bytes, watermark_text="Confidential - Demo")
+
+        # Upload PDF to storage
+        pdf_path = "examples/report.pdf"
+        upload_pdf_result = await storage.upload(
+            pdf_path,
+            pdf_bytes,
+            metadata={"type": "report", "generated": datetime.now().isoformat()},
+        )
+
+        print("PDF generation and upload result:")
+        print(f"  Path: {upload_pdf_result['path']}")
+        print(f"  Size: {upload_pdf_result['size']} bytes")
+        print(f"  Hash: {upload_pdf_result['hash']}")
+
+        # Verify download
+        downloaded_pdf = await storage.download(pdf_path)
+        print(f"  Downloaded PDF matches uploaded: {downloaded_pdf == pdf_bytes}")
+
+        # Cleanup PDF
+        await storage.delete(pdf_path)
+
+    except ImportError as ie:
+        print("PDF generation skipped - missing dependency:", ie)
+    except Exception as e:
+        print("PDF generation failed:", str(e))
+
     # Example 4: Storage Backend
     print("\n4. STORAGE BACKEND - File Management")
     print("-" * 60)
