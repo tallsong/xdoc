@@ -393,33 +393,100 @@ class DocumentService:
             List of matching documents
         """
         from app.document_management.models import Document
+        import re
 
-        search_query = self.db.query(Document).filter(
-            Document.title.ilike(f"%{query}%")
-            | Document.doc_type.ilike(f"%{query}%")
+        # Try to parse date queries like "2024 年 5 月" or "May 2024" to derive date_from/date_to
+        if query and (not date_from and not date_to):
+            # Chinese pattern: 2024 年 5 月
+            m = re.search(r"(?P<year>\d{4})\s*年\s*(?P<month>\d{1,2})\s*月", query)
+            if m:
+                y = int(m.group("year"))
+                mo = int(m.group("month"))
+                date_from = datetime(y, mo, 1)
+                # compute last day of month
+                if mo == 12:
+                    date_to = datetime(y + 1, 1, 1) - timedelta(seconds=1)
+                else:
+                    date_to = datetime(y, mo + 1, 1) - timedelta(seconds=1)
+            else:
+                # English month-year like 'May 2024'
+                m2 = re.search(r"(?P<month_name>[A-Za-z]+)\s+(?P<year>\d{4})", query)
+                if m2:
+                    try:
+                        month_name = m2.group("month_name")
+                        y = int(m2.group("year"))
+                        mo = datetime.strptime(month_name, "%B").month
+                        date_from = datetime(y, mo, 1)
+                        if mo == 12:
+                            date_to = datetime(y + 1, 1, 1) - timedelta(seconds=1)
+                        else:
+                            date_to = datetime(y, mo + 1, 1) - timedelta(seconds=1)
+                    except Exception:
+                        # ignore parse errors
+                        date_from = date_to = None
+
+        # Build base query: search title, doc_type, and metadata_json text (fast LIKE)
+        like_expr = f"%{query}%" if query else "%"
+        search_q = self.db.query(Document).filter(
+            (Document.title.ilike(like_expr))
+            | (Document.doc_type.ilike(like_expr))
+            | (Document.metadata_json.ilike(like_expr))
         )
 
         if doc_type:
-            search_query = search_query.filter(Document.doc_type == doc_type)
+            search_q = search_q.filter(Document.doc_type == doc_type)
 
         if date_from:
-            search_query = search_query.filter(Document.created_at >= date_from)
-
+            search_q = search_q.filter(Document.created_at >= date_from)
         if date_to:
-            search_query = search_query.filter(Document.created_at <= date_to)
+            search_q = search_q.filter(Document.created_at <= date_to)
 
-        documents = search_query.order_by(Document.created_at.desc()).limit(limit).all()
+        # Order by created_at desc and limit
+        candidates = search_q.order_by(Document.created_at.desc()).limit(limit * 5).all()
 
-        return [
-            {
-                "id": doc.id,
-                "title": doc.title,
-                "doc_type": doc.doc_type,
-                "status": doc.status.value,
-                "created_at": doc.created_at.isoformat(),
-            }
-            for doc in documents
-        ]
+        # Post-filtering: if query was a date expression but metadata contains more precise 'generated' fields,
+        # prefer metadata checks. This step operates in-memory but only on a limited candidate set for speed.
+        results: list[Dict[str, Any]] = []
+        for doc in candidates:
+            add = False
+            # If query had date filters, we've already applied them via created_at
+            # Also check metadata_json for more precise matches (e.g., metadata.generated contains ISO date)
+            try:
+                meta = json.loads(doc.metadata_json) if doc.metadata_json else {}
+            except Exception:
+                meta = {}
+
+            # If the raw query appears in metadata values, match
+            if query:
+                qlow = query.lower()
+                # check keys and values in metadata
+                for k, v in meta.items():
+                    try:
+                        if qlow in str(k).lower() or qlow in str(v).lower():
+                            add = True
+                            break
+                    except Exception:
+                        continue
+
+            # If not matched by metadata, fall back to title/doc_type matching
+            if not add:
+                if query.lower() in (doc.title or "").lower() or query.lower() in (doc.doc_type or "").lower():
+                    add = True
+
+            if add:
+                results.append({
+                    "id": doc.id,
+                    "title": doc.title,
+                    "doc_type": doc.doc_type,
+                    "status": doc.status.value,
+                    "created_at": doc.created_at.isoformat(),
+                    "metadata": meta,
+                })
+
+            if len(results) >= limit:
+                break
+
+        return results
 
     async def _log_access(
         self,

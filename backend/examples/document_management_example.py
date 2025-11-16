@@ -238,6 +238,86 @@ Summary: {{summary}}
         print(f"  Retention: {info['retention']}")
         print(f"  Default Access Level: {info['access_level']}")
 
+    # Example 5.5: Metadata Search (demo)
+    print("\n5.5 METADATA SEARCH - Query by metadata (e.g., '2024 年 5 月的报告')")
+    print("-" * 60)
+
+    try:
+        # Create an in-memory SQLite DB and insert sample Document rows
+        from sqlmodel import SQLModel, create_engine, Session
+        from app.document_management.models.document import Document
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        SQLModel.metadata.create_all(engine)
+
+        session = Session(engine)
+
+        # Insert sample documents with metadata_json containing generated dates and tags
+        docs = [
+            Document(
+                title="Monthly Report May 2024",
+                template_id=1,
+                template_version=1,
+                doc_type="reports",
+                file_path="documents/reports/202405/report_may.pdf",
+                file_hash="hash1",
+                file_size=1234,
+                input_data="{}",
+                metadata_json=json.dumps({"generated": "2024-05-15", "tags": ["monthly", "finance"], "note": "2024 年 5 月的报告"}),
+                created_by=1,
+            ),
+            Document(
+                title="Weekly Status May 2024",
+                template_id=1,
+                template_version=1,
+                doc_type="reports",
+                file_path="documents/reports/202405/weekly1.pdf",
+                file_hash="hash2",
+                file_size=2345,
+                input_data="{}",
+                metadata_json=json.dumps({"generated": "2024-05-21", "tags": ["weekly", "engineering"]}),
+                created_by=2,
+            ),
+            Document(
+                title="Contract 2024-01",
+                template_id=2,
+                template_version=1,
+                doc_type="contracts",
+                file_path="documents/contracts/202401/contract1.pdf",
+                file_hash="hash3",
+                file_size=3456,
+                input_data="{}",
+                metadata_json=json.dumps({"generated": "2024-01-10", "tags": ["legal"]}),
+                created_by=3,
+            ),
+        ]
+
+        session.add_all(docs)
+        session.commit()
+
+        # Create DocumentService with the same storage and DB session
+        from app.document_management.services.document import DocumentService
+
+        svc = DocumentService(storage_backend=storage, db_session=session)
+
+        # Example search: Chinese date phrase
+        results_cn = await svc.search_documents(query="2024 年 5 月的 报告", doc_type="reports", limit=10)
+        print("Search results for '2024 年 5 月的 报告':")
+        for r in results_cn:
+            print(f"  - {r['title']} ({r['created_at']}) tags={r.get('metadata', {}).get('tags')}")
+
+        # Example search: keyword
+        results_kw = await svc.search_documents(query="weekly", limit=10)
+        print("Search results for 'weekly':")
+        for r in results_kw:
+            print(f"  - {r['title']} ({r['doc_type']}) metadata={r.get('metadata')}")
+
+        # Close session
+        session.close()
+
+    except Exception as e:
+        print("Metadata search demo skipped/failed:", str(e))
+
     # Example 6: Security Features
     print("\n6. SECURITY FEATURES")
     print("-" * 60)
