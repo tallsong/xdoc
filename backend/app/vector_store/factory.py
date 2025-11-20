@@ -2,11 +2,13 @@ from typing import Dict, Any, Optional, Type
 from .base import VectorStoreBase
 from .chroma import ChromaDBStore
 from .pinecone_store import PineconeStore
+from .weaviate_store import WeaviateStore
 
 class VectorStoreFactory:
     _stores: Dict[str, Type[VectorStoreBase]] = {
         "chroma": ChromaDBStore,
-        "pinecone": PineconeStore
+        "pinecone": PineconeStore,
+        "weaviate": WeaviateStore
     }
 
     @classmethod

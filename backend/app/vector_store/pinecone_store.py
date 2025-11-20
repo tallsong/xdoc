@@ -201,6 +201,25 @@ class PineconeStore(VectorStoreBase):
         self.index.delete(delete_all=True, namespace=self.namespace)
         self.stats["vector_count"] = 0
 
+    def optimize(self) -> None:
+        # Pinecone is managed, optimization is automatic.
+        pass
+
+    def cleanup_expired(self) -> None:
+        """Clean up expired documents based on TTL."""
+        if not self.index:
+             return
+
+        now = time.time()
+        try:
+            # Pinecone delete by metadata filter
+            self.index.delete(
+                filter={"expires_at": {"$lt": now}},
+                namespace=self.namespace
+            )
+        except Exception as e:
+             print(f"TTL cleanup failed: {e}")
+
     def get_stats(self) -> Dict[str, Any]:
         stats = super().get_stats()
         if self.index:
