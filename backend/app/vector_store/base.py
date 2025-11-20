@@ -79,6 +79,14 @@ class VectorStoreBase(ABC):
         """Clear all vectors from the store"""
         pass
 
+    def optimize(self) -> None:
+        """Optimize the index if supported by the underlying store."""
+        pass
+
+    def cleanup_expired(self) -> None:
+        """Clean up expired documents based on TTL."""
+        pass
+
     @abstractmethod
     def get_stats(self) -> Dict[str, Any]:
         """Get store statistics"""

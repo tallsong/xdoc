@@ -181,6 +181,27 @@ class ChromaDBStore(VectorStoreBase):
         self.collection.delete()
         self.stats["vector_count"] = 0
 
+    def optimize(self) -> None:
+        # ChromaDB doesn't have explicit optimize/vacuum API exposed easily in client yet?
+        # But we can implement it as a no-op or if there is one.
+        # Currently no-op.
+        pass
+
+    def cleanup_expired(self) -> None:
+        """Clean up expired documents based on TTL."""
+        if not self.collection:
+             return
+
+        now = time.time()
+        try:
+            # Query for documents where expires_at < now
+            # Chroma filtering: {"expires_at": {"$lt": now}}
+            self.collection.delete(
+                where={"expires_at": {"$lt": now}}
+            )
+        except Exception as e:
+            print(f"TTL cleanup failed: {e}")
+
     def get_stats(self) -> Dict[str, Any]:
         stats = super().get_stats()
         if self.collection:
